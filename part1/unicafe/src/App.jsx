@@ -9,6 +9,8 @@ const Statistics = ({ reviews: [good, neutral, bad] }) => {
   const average = (good - bad) / all;
   const positive = (good / all) * 100;
 
+  if (all === 0) return <p>No feedback given</p>
+
   return (
     <>
       <p>Good {good}</p>
