@@ -5,27 +5,30 @@ const Header = ({ title }) => <h2>{title}</h2>;
 const Button = ({ onClick, text }) => <button onClick={onClick}>{text}</button>;
 
 const StatisticLine = ({ text, value }) => (
-  <p>
-    {text} {value}
-  </p>
+  <tr>
+    <td align="left">{text}</td>
+    <td>{value}</td>
+  </tr>
 );
 
 const Statistics = ({ reviews: [good, neutral, bad] }) => {
   const all = good + neutral + bad;
   const average = (good - bad) / all;
-  const positive = (good / all) * 100;
+  const positive = `${(good / all) * 100} %`;
 
   if (all === 0) return <p>No feedback given</p>;
 
   return (
-    <>
-      <StatisticLine text="Good" value={good} />
-      <StatisticLine text="Neutral" value={neutral} />
-      <StatisticLine text="Bad" value={bad} />
-      <StatisticLine text="All" value={all} />
-      <StatisticLine text="Average" value={average} />
-      <StatisticLine text="Positive" value={positive} />
-    </>
+    <table>
+      <tbody>
+        <StatisticLine text="Good" value={good} />
+        <StatisticLine text="Neutral" value={neutral} />
+        <StatisticLine text="Bad" value={bad} />
+        <StatisticLine text="All" value={all} />
+        <StatisticLine text="Average" value={average} />
+        <StatisticLine text="Positive" value={positive} />
+      </tbody>
+    </table>
   );
 };
 
