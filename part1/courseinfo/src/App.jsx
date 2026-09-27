@@ -1,4 +1,4 @@
-const Header = ({ name }) => <h1>{name}</h1>;
+const Header = ({ course }) => <h1>{course}</h1>;
 
 const Total = ({ parts }) => (
   <p>Number of exercises {parts.reduce((a, c) => a + c.exercises, 0)}</p>
