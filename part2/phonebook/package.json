@@ -8,10 +8,11 @@
     "build": "vite build",
     "lint": "oxlint",
     "format": "oxfmt",
+    "server": "json-server -p 3001 db.json",
     "preview": "vite preview"
   },
   "dependencies": {
-    "oxfmt": "^0.70.0",
+    "axios": "^1.20.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -19,7 +20,9 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "json-server": "^1.0.0-beta.15",
     "oxlint": "^1.81.0",
+    "oxfmt": "^0.70.0",
     "vite": "^8.3.0"
   }
 }
