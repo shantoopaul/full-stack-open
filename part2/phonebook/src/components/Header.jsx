@@ -1,3 +1,5 @@
-const Header = ({ title }) => <h2>{title}</h2>;
+const HeaderM = ({ title }) => <h1>{title}</h1>;
 
-export default Header;
+const HeaderR = ({ title }) => <h2>{title}</h2>;
+
+export { HeaderM, HeaderR };

@@ -1,15 +1,18 @@
 import { useEffect, useState } from "react";
-import Header from "./components/Header";
+import { HeaderM, HeaderR } from "./components/Header";
 import Filter from "./components/Filter";
 import Persons from "./components/Persons";
 import PersonForm from "./components/PersonForm";
 import personService from "./services/persons";
+import Notification from "./components/Notification";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [filter, setFilter] = useState("");
+  const [message, setMessage] = useState(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     personService.getAll().then((initialPersons) => {
@@ -35,16 +38,33 @@ const App = () => {
         setPersons([...persons, newPerson]);
         setNewName("");
         setNewNumber("");
+        setMessage(`Added ${newName}`);
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
       });
     } else {
       if (
         confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)
       ) {
-        personService.update(personExist.id, newPerson).then((newPerson) => {
-          setPersons(persons.map((person) => (person.id === personExist.id ? newPerson : person)));
-          setNewName("");
-          setNewNumber("");
-        });
+        personService
+          .update(personExist.id, newPerson)
+          .then((newPerson) => {
+            setPersons(
+              persons.map((person) => (person.id === personExist.id ? newPerson : person)),
+            );
+            setNewName("");
+            setNewNumber("");
+          })
+          .catch((error) => {
+            setMessage(`Information of '${newName}' has already been removed from server`);
+            setError(true);
+            setTimeout(() => {
+              setMessage(null);
+              setError(false);
+            }, 5000);
+            setPersons(persons.filter((person) => person.name !== newName));
+          });
       }
     }
   };
@@ -69,9 +89,10 @@ const App = () => {
 
   return (
     <div>
-      <Header title="Phonebook" />
+      <HeaderM title="Phonebook" />
+      <Notification message={message} error={error} />
       <Filter onChange={(e) => setFilter(e.target.value)} />
-      <Header title="Add a new" />
+      <HeaderR title="Add a new" />
       <PersonForm
         newName={newName}
         newNumber={newNumber}
@@ -79,7 +100,7 @@ const App = () => {
         onNameChange={handleNameChange}
         onNumberChange={handleNumberChange}
       />
-      <Header title="Numbers" />
+      <HeaderR title="Numbers" />
       <Persons persons={filteredPersons} handleDelete={handleDelete} />
     </div>
   );
