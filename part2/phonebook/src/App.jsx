@@ -3,7 +3,7 @@ import Header from "./components/Header";
 import Filter from "./components/Filter";
 import Persons from "./components/Persons";
 import PersonForm from "./components/PersonForm";
-import axios from "axios";
+import personService from "./services/persons";
 
 const App = () => {
   const [persons, setPersons] = useState([]);
@@ -12,26 +12,40 @@ const App = () => {
   const [filter, setFilter] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:3001/persons").then((res) => {
-      setPersons(res.data);
+    personService.getAll().then((initialPersons) => {
+      setPersons(initialPersons);
     });
   }, []);
 
-  const filterPerson = persons.filter((person) =>
+  const filteredPersons = persons.filter((person) =>
     person.name.toLowerCase().includes(filter.toLowerCase()),
   );
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const isDuplicate = persons.some((person) => person.name === newName);
+    const personExist = persons.find((person) => person.name === newName);
+    const newPerson = {
+      name: newName,
+      number: newNumber,
+    };
 
-    if (!isDuplicate) {
-      setPersons([...persons, { name: newName, number: newNumber }]);
-      setNewName("");
-      setNewNumber("");
+    if (!personExist) {
+      personService.create(newPerson).then((newPerson) => {
+        setPersons([...persons, newPerson]);
+        setNewName("");
+        setNewNumber("");
+      });
     } else {
-      alert(`${newName} is already added to phonebook`);
+      if (
+        confirm(`${newName} is already added to phonebook, replace the old number with a new one?`)
+      ) {
+        personService.update(personExist.id, newPerson).then((newPerson) => {
+          setPersons(persons.map((person) => (person.id === personExist.id ? newPerson : person)));
+          setNewName("");
+          setNewNumber("");
+        });
+      }
     }
   };
 
@@ -43,24 +57,30 @@ const App = () => {
     setNewNumber(e.target.value);
   };
 
-  const handleFilterNameChange = (e) => {
-    setFilter(e.target.value);
+  const handleDelete = (id) => {
+    const person = persons.find((person) => person.id === id);
+
+    if (confirm(`Delete ${person.name}`)) {
+      personService.remove(id);
+
+      setPersons((persons) => persons.filter((person) => person.id !== id));
+    }
   };
 
   return (
     <div>
       <Header title="Phonebook" />
-      <Filter onChange={handleFilterNameChange} />
+      <Filter onChange={(e) => setFilter(e.target.value)} />
       <Header title="Add a new" />
       <PersonForm
         newName={newName}
         newNumber={newNumber}
         onSubmit={handleSubmit}
-        handleNameChange={handleNameChange}
-        handleNumberChange={handleNumberChange}
+        onNameChange={handleNameChange}
+        onNumberChange={handleNumberChange}
       />
       <Header title="Numbers" />
-      <Persons persons={filterPerson} />
+      <Persons persons={filteredPersons} handleDelete={handleDelete} />
     </div>
   );
 };
