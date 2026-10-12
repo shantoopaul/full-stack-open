@@ -1,0 +1,12 @@
+.spacing-right {
+	padding-inline-end: 6px;
+}
+
+.list-style {
+	list-style-type: none;
+	padding: 0;
+}
+
+.flag-border {
+	border: 2px dashed gray;
+}

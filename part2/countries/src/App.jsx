@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import weatherService from "./services/weather";
+import countriesService from "./services/countries";
 import CountryDetails from "./components/CountryDetails";
-
-const baseUrl = "https://studies.cs.helsinki.fi/restcountries/api";
+import SearchBar from "./components/SearchBar";
 
 const App = () => {
   const [inputValue, setInputValue] = useState("");
   const [allCountries, setAllCountries] = useState([]);
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [weather, setWeather] = useState(null);
 
   useEffect(() => {
-    axios.get(`${baseUrl}/all`).then((res) => setAllCountries(res.data));
+    countriesService.getCountries().then((countries) => setAllCountries(countries));
   }, []);
 
   const query = inputValue.trim().toLowerCase();
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+    setSelectedCountry(null);
+  };
 
   const filteredCountries = query
     ? allCountries.filter((c) => c.name.common.toLowerCase().includes(query))
@@ -26,33 +32,27 @@ const App = () => {
   const onlyMatch = filteredCountries.length === 1 ? filteredCountries[0] : null;
   const displayCountry = selectedCountry || exactMatch || onlyMatch;
 
+  const spot = displayCountry?.capital ? displayCountry?.capital[0] : displayCountry?.name?.common;
+
+  useEffect(() => {
+    if (!spot) {
+      return;
+    }
+    weatherService.getWeather(spot).then((weather) => setWeather(weather));
+  }, [spot]);
+
   return (
     <>
-      <div>
-        <label htmlFor="search" style={{ paddingInlineEnd: "6px" }}>
-          Find Countries
-        </label>
-        <input
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            setSelectedCountry(null);
-          }}
-          type="search"
-          id="search"
-          placeholder="Bangladesh"
-        />
-      </div>
-
+      <SearchBar value={inputValue} onChange={handleInputChange} />
       {displayCountry ? (
-        <CountryDetails displayCountry={displayCountry} />
+        <CountryDetails displayCountry={displayCountry} spot={spot} weather={weather} />
       ) : filteredCountries.length > 10 ? (
         <span>Too many matches, specify another filter</span>
       ) : (
-        <ul style={{ listStyleType: "none", padding: 0 }}>
+        <ul className="list-style">
           {filteredCountries.map((c) => (
             <li key={c.cca3}>
-              <span style={{ paddingInlineEnd: "6px" }}>{c.name.common}</span>
+              <span className="spacing-right">{c.name.common}</span>
               <button onClick={() => setSelectedCountry(c)}>Show</button>
             </li>
           ))}
