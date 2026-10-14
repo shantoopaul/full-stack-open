@@ -1,7 +1,12 @@
 import express from "express";
+import morgan from "morgan";
 
 const app = express();
 app.use(express.json());
+morgan.token('body', (req) => req.body ? JSON.stringify(req.body).split("\\") : ' ');
+// morgan 'tiny' with :body token
+app.use(morgan(`:method :url :status :res[content-length] - :response-time ms :body`))
+
 
 const PORT = 3001;
 let persons = [
