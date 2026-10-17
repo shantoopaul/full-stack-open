@@ -1,69 +1,38 @@
 import express from "express";
 import morgan from "morgan";
+import Person from "./models/person.js";
+import config from "./config/index.js";
 
+const PORT = config.PORT || 3001;
 const app = express();
-app.use(express.json());
 app.use(express.static('dist'))
+app.use(express.json());
 
 morgan.token('body', (req) => req.body ? JSON.stringify(req.body).split("\\") : ' ');
 // morgan 'tiny' with :body token
 app.use(morgan(`:method :url :status :res[content-length] - :response-time ms :body`))
 
+app.post('/api/persons', (req, res, next) => {
+	const { name, number } = req.body;
 
-const PORT = process.env.PORT || 3001;
-let persons = [
-	{
-		"id": "1",
-		"name": "Arto Hellas",
-		"number": "040-123456"
-	},
-	{
-		"id": "2",
-		"name": "Ada Lovelace",
-		"number": "39-44-5323523"
-	},
-	{
-		"id": "3",
-		"name": "Dan Abramov",
-		"number": "12-43-234345"
-	},
-	{
-		"id": "4",
-		"name": "Mary Poppendieck",
-		"number": "39-23-6423122"
-	}
-]
-
-app.post('/api/persons', (req, res) => {
-	const body = req.body;
-	const id = String(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
-	const isDuplicateName = persons.some(person => person.name === body.name);
-
-	if (!body.name) {
+	if (!name) {
 		return res.status(400).json({
 			error: "Name cannot be empty!!!"
 		})
 	}
-	if (isDuplicateName) {
-		return res.status(400).json({
-			error: "Name must be unique!!!"
-		})
-	}
-	if (!body.number) {
+	if (!number) {
 		return res.status(400).json({
 			error: "Number cannot be empty!!!"
 		})
 	}
 
-	const person = {
-		id: id,
-		name: body.name,
-		number: body.number,
-	}
+	const person = new Person({ name, number })
 
-	persons = [...persons, person]
-
-	res.status(201).json(person)
+	person.save().then(person => {
+		res.status(201).json(person)
+		console.log(person);
+	})
+	.catch(error => next(error))
 })
 
 app.get('/', (req, res) => {
@@ -71,34 +40,75 @@ app.get('/', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-	res.json(persons)
+	Person.find({}).then(persons => res.json(persons))
 })
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', (req, res, next) => {
 	const id = req.params.id;
-	const person = persons.find((person) => person.id === id)
-
-	if (person) {
-		res.json(person)
-	} else {
-		res.statusMessage = `No person information found with id: ${id}`
-		res.status(404).end();
-	}
+	Person.findById(id)
+		.then(person => {
+			if (person) {
+				res.json(person)
+			} else {
+				res.statusMessage = `No person information found with id: ${id}`
+				res.status(404).end();
+			}
+		})
+		.catch(error => next(error))
 })
 
 app.get('/info', (req, res) => {
-	res.send(`<p>Phonebook has info for ${persons.length} people</p>
-		<p>${Date()}</p>
-		`)
+	Person.countDocuments({}).then((count) => {
+		res.send(`<p>Phonebook has info for ${count} people</p>
+			<p>${Date()}</p>
+			`)
+	});
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-	const id = req.params.id;
-	persons = persons.filter((person) => person.id !== id)
+app.put('/api/persons/:id', (req, res, next) => {
+	const { name, number } = req.body
 
-	res.status(204).end()
+	Person.findById(req.params.id)
+		.then(person => {
+			if (!person) {
+				return res.status(404).end()
+			}
+
+			person.name = name
+			person.number = number
+
+			return person.save().then((person) => {
+				res.json(person)
+			})
+		})
+		.catch(error => next(error))
+})
+
+app.delete('/api/persons/:id', (req, res, next) => {
+	const id = req.params.id;
+	Person.findByIdAndDelete(id)
+		.then(() => res.status(204).end())
+		.catch(error => next(error))
 })
 
 app.listen(PORT, () => {
 	console.log(`App is running on localhost:${PORT}`);
 })
+
+const unknownEndpoint = (req, res) => {
+	res.status(404).send({ error: 'unknown endpoint' })
+}
+
+const errorHandler = (error, req, res, next) => {
+	console.error(error);
+
+	if (error.name === "CastError") {
+		res.status(400).send({ error: 'malformatted id' })
+	} else if (error.name === 'ValidationError') {
+		return res.status(400).json({ error: error.message })
+	}
+	next(error)
+}
+
+app.use(unknownEndpoint)
+app.use(errorHandler)
